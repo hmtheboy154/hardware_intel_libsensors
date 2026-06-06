@@ -26,6 +26,7 @@
 /* This is the IIO Sensors HAL module entry points file */
 
 static int init_count;
+hwdb_sensor_context* g_hwdb_sensor_ctx = NULL;
 
 static int activate (__attribute__((unused)) struct sensors_poll_device_t* dev,
 		     int handle, int enabled)
@@ -129,6 +130,10 @@ static int close_module (__attribute__((unused)) hw_device_t *device)
 
 	if (init_count == 0) {
 		ALOGI("Closing IIO sensors HAL module\n");
+		if (g_hwdb_sensor_ctx) {
+			hwdb_sensor_free(g_hwdb_sensor_ctx);
+			g_hwdb_sensor_ctx = NULL;
+		}
 		delete_enumeration_data();
 		delete_control_data();
 	}
@@ -160,6 +165,7 @@ static int initialize_module(const struct hw_module_t *module, const char *id,
 
         if (init_count == 0) {
 		ALOGI("Initializing IIO sensors HAL module\n");
+		g_hwdb_sensor_ctx = hwdb_sensor_init(NULL);
 		allocate_control_data();
 		enumerate_sensors();
 	}

@@ -311,62 +311,56 @@ static void process_event (int s, sensors_event_t* data)
 }
 
 static void prop_transform_sample(int s, sensors_event_t *data){
-	/* Bring back matrix transformation, could be useful for sideway panel devices, or just in general */
 	float m[9];
 	float v[3];
 	float v_new[3];
 	char cm[PROPERTY_VALUE_MAX];
 
-	switch(sensor_desc[s].type){
-		case SENSOR_TYPE_ACCELEROMETER:
-			property_get("persist.hal.sensors.iio.accel.matrix", cm, "1,0,0,0,1,0,0,0,1" );
+	if(sensor_desc[s].type == SENSOR_TYPE_ACCELEROMETER || sensor_desc[s].type == SENSOR_TYPE_MAGNETIC_FIELD || sensor_desc[s].type == SENSOR_TYPE_GYROSCOPE){
+		if (!sensor[s].has_prop_matrix) {
+			/* No matrix to apply */
+			goto skip_matrix;
+		}
+
+		/* Use the cached matrix */
+		for (int i = 0; i < 9; i++) {
+			m[i] = sensor[s].prop_matrix[i];
+		}
+
+		if (sensor_desc[s].type == SENSOR_TYPE_ACCELEROMETER) {
 			v[0] = data->acceleration.x;
 			v[1] = data->acceleration.y;
 			v[2] = data->acceleration.z;
-			break;
-
-		case SENSOR_TYPE_MAGNETIC_FIELD:
-			property_get("persist.hal.sensors.iio.magn.matrix", cm, "1,0,0,0,1,0,0,0,1" );
+		} else if (sensor_desc[s].type == SENSOR_TYPE_MAGNETIC_FIELD) {
 			v[0] = data->magnetic.x;
 			v[1] = data->magnetic.y;
 			v[2] = data->magnetic.z;
-			break;
-
-		case SENSOR_TYPE_GYROSCOPE:
-			property_get("persist.hal.sensors.iio.anglvel.matrix", cm, "1,0,0,0,1,0,0,0,1" );
+		} else if (sensor_desc[s].type == SENSOR_TYPE_GYROSCOPE) {
 			v[0] = data->gyro.x;
 			v[1] = data->gyro.y;
 			v[2] = data->gyro.z;
-			break;
-	}
+		}
 
-	if(sensor_desc[s].type == SENSOR_TYPE_ACCELEROMETER || sensor_desc[s].type == SENSOR_TYPE_MAGNETIC_FIELD || sensor_desc[s].type == SENSOR_TYPE_GYROSCOPE){
-		sscanf(cm, "%f,%f,%f,%f,%f,%f,%f,%f,%f", &m[0], &m[1], &m[2], &m[3], &m[4], &m[5], &m[6], &m[7], &m[8]);
 		v_new[0] = v[0] * m[0] + v[1] * m[1] + v[2] * m[2];
 		v_new[1] = v[0] * m[3] + v[1] * m[4] + v[2] * m[5];
 		v_new[2] = v[0] * m[6] + v[1] * m[7] + v[2] * m[8];
-	}
 
-	switch(sensor_desc[s].type){
-		case SENSOR_TYPE_ACCELEROMETER:
+		if (sensor_desc[s].type == SENSOR_TYPE_ACCELEROMETER) {
 			data->acceleration.x = v_new[0];
 			data->acceleration.y = v_new[1];
 			data->acceleration.z = v_new[2];
-			break;
-
-		case SENSOR_TYPE_MAGNETIC_FIELD:
+		} else if (sensor_desc[s].type == SENSOR_TYPE_MAGNETIC_FIELD) {
 			data->magnetic.x = v_new[0];
 			data->magnetic.y = v_new[1];
 			data->magnetic.z = v_new[2];
-			break;
-
-		case SENSOR_TYPE_GYROSCOPE:
+		} else if (sensor_desc[s].type == SENSOR_TYPE_GYROSCOPE) {
 			data->gyro.x = v_new[0];
 			data->gyro.y = v_new[1];
 			data->gyro.z = v_new[2];
-			break;
+		}
 	}
 
+skip_matrix:
 	/* Light sensor scale prop, if the driver provided scale (or lack thereof) do not match with the one size fit all config_autoBrightnessLevels */
 	if(sensor_desc[s].type == SENSOR_TYPE_LIGHT){
 		property_get("persist.hal.sensors.iio.light.scale", cm, "1.0");

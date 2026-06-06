@@ -46,6 +46,7 @@ LOCAL_CFLAGS += -D__NO_EVENTS__
 endif
 LOCAL_LDFLAGS := -Wl,--gc-sections
 LOCAL_SHARED_LIBRARIES := liblog libcutils libdl
+LOCAL_STATIC_LIBRARIES := libhwdb_sensor libsmbios_parser
 LOCAL_PRELINK_MODULE := false
 LOCAL_SRC_FILES := $(src_files)
 LOCAL_PROPRIETARY_MODULE := true

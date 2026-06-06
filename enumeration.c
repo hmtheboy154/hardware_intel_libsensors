@@ -18,6 +18,7 @@
 #include <dirent.h>
 #include <stdlib.h>
 #include <fcntl.h>
+#include <cutils/properties.h>
 #include <utils/Log.h>
 #include <sys/stat.h>
 #include <hardware/sensors.h>
@@ -739,6 +740,79 @@ static int add_sensor (int dev_num, int catalog_index, int mode)
 		sensor[s].quirks |= QUIRK_FIELD_ORDERING;
 
 	sensor[s].needs_enable = get_needs_enable(dev_num, sensor_catalog[catalog_index].tag);
+
+	/* Initialize prop_matrix using hwdb_sensor if available, or fallback to Android properties */
+	sensor[s].has_prop_matrix = 0;
+	if (sensor_type == SENSOR_TYPE_ACCELEROMETER || sensor_type == SENSOR_TYPE_MAGNETIC_FIELD || sensor_type == SENSOR_TYPE_GYROSCOPE) {
+		const char* prop_name = NULL;
+		const char* hwdb_key = NULL;
+
+		if (sensor_type == SENSOR_TYPE_ACCELEROMETER) {
+			prop_name = "persist.hal.sensors.iio.accel.matrix";
+			hwdb_key = "ACCEL_MOUNT_MATRIX";
+		} else if (sensor_type == SENSOR_TYPE_MAGNETIC_FIELD) {
+			prop_name = "persist.hal.sensors.iio.magn.matrix";
+			hwdb_key = "MAGN_MOUNT_MATRIX";
+		} else if (sensor_type == SENSOR_TYPE_GYROSCOPE) {
+			prop_name = "persist.hal.sensors.iio.anglvel.matrix";
+			hwdb_key = "GYRO_MOUNT_MATRIX";
+		}
+
+		char raw_modalias[512] = {0};
+		char sysfs_path[PATH_MAX];
+		int has_hwdb_matrix = 0;
+
+		/* Try reading the modalias for this IIO device */
+		sprintf(sysfs_path, BASE_PATH "device/modalias", dev_num);
+		FILE* f = fopen(sysfs_path, "r");
+		if (!f) {
+			sprintf(sysfs_path, BASE_PATH "../modalias", dev_num);
+			f = fopen(sysfs_path, "r");
+		}
+		
+		if (f) {
+			if (fgets(raw_modalias, sizeof(raw_modalias), f)) {
+				/* Strip trailing newline */
+				int len = strlen(raw_modalias);
+				if (len > 0 && raw_modalias[len - 1] == '\n') {
+					raw_modalias[len - 1] = '\0';
+				}
+
+				if (g_hwdb_sensor_ctx) {
+					char* full_modalias = hwdb_sensor_build_modalias(raw_modalias);
+					if (full_modalias) {
+						const char* matrix_val = hwdb_sensor_get_property(g_hwdb_sensor_ctx, full_modalias, hwdb_key);
+						if (matrix_val) {
+							if (sscanf(matrix_val, "%f,%f,%f,%f,%f,%f,%f,%f,%f", 
+								&sensor[s].prop_matrix[0], &sensor[s].prop_matrix[1], &sensor[s].prop_matrix[2],
+								&sensor[s].prop_matrix[3], &sensor[s].prop_matrix[4], &sensor[s].prop_matrix[5],
+								&sensor[s].prop_matrix[6], &sensor[s].prop_matrix[7], &sensor[s].prop_matrix[8]) == 9) {
+								sensor[s].has_prop_matrix = 1;
+								has_hwdb_matrix = 1;
+								ALOGI("S%d: Loaded %s from hwdb for modalias %s", s, hwdb_key, full_modalias);
+							}
+						}
+						free(full_modalias);
+					}
+				}
+			}
+			fclose(f);
+		}
+
+		/* Fallback to legacy Android properties if hwdb didn't provide a matrix */
+		if (!has_hwdb_matrix) {
+			char cm[PROPERTY_VALUE_MAX];
+			if (property_get(prop_name, cm, NULL) > 0) {
+				if (sscanf(cm, "%f,%f,%f,%f,%f,%f,%f,%f,%f", 
+					&sensor[s].prop_matrix[0], &sensor[s].prop_matrix[1], &sensor[s].prop_matrix[2],
+					&sensor[s].prop_matrix[3], &sensor[s].prop_matrix[4], &sensor[s].prop_matrix[5],
+					&sensor[s].prop_matrix[6], &sensor[s].prop_matrix[7], &sensor[s].prop_matrix[8]) == 9) {
+					sensor[s].has_prop_matrix = 1;
+					ALOGI("S%d: Loaded matrix from property %s", s, prop_name);
+				}
+			}
+		}
+	}
 
 	sensor_count++;
 	return 0;

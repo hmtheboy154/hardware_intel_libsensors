@@ -312,9 +312,14 @@ typedef struct
 	int needs_enable;
 
 	float semi_arbitrated_rate;	/* Arbitrated sampling rate before we considered other sensors co-located on the same iio device */
+
+	float prop_matrix[9];		/* Transformation matrix retrieved from hwdb or Android properties */
+	int has_prop_matrix;		/* Indicates if prop_matrix has been initialized */
 }
 sensor_info_t;
 
+
+#include <hwdb_sensor.h>
 
 /* Reference a few commonly used variables... */
 extern int			sensor_count;
@@ -322,6 +327,8 @@ extern struct sensor_t		sensor_desc[MAX_SENSORS];
 extern sensor_info_t		sensor[MAX_SENSORS];
 extern sensor_catalog_entry_t	sensor_catalog[];
 extern unsigned int		catalog_size;
+
+extern hwdb_sensor_context* g_hwdb_sensor_ctx;
 
 /* Needed both in sensors and activity HALs */
 void check_trig_sensors (int i, char *sysfs_file, char map[catalog_size]);
