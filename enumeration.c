@@ -845,6 +845,33 @@ static int add_sensor (int dev_num, int catalog_index, int mode)
 			fclose(f);
 		}
 
+		/* Fallback to reading the IIO 'label' sysfs node if hwdb didn't provide ACCEL_LOCATION */
+		if (sensor_type == SENSOR_TYPE_ACCELEROMETER && sensor[s].location[0] == '\0') {
+			sprintf(sysfs_path, BASE_PATH "device/label", dev_num);
+			f = fopen(sysfs_path, "r");
+			if (!f) {
+				sprintf(sysfs_path, BASE_PATH "../label", dev_num);
+				f = fopen(sysfs_path, "r");
+			}
+			if (f) {
+				char label_val[64];
+				if (fgets(label_val, sizeof(label_val), f)) {
+					int len = strlen(label_val);
+					if (len > 0 && label_val[len - 1] == '\n') label_val[len - 1] = '\0';
+					
+					if (!strcmp(label_val, "accel-base")) {
+						strcpy(sensor[s].location, "base");
+						sensor[s].quirks |= QUIRK_SECONDARY;
+						ALOGI("S%d: Loaded ACCEL_LOCATION 'base' from sysfs label", s);
+					} else if (!strcmp(label_val, "accel-display")) {
+						strcpy(sensor[s].location, "display");
+						ALOGI("S%d: Loaded ACCEL_LOCATION 'display' from sysfs label", s);
+					}
+				}
+				fclose(f);
+			}
+		}
+
 		/* Fallback to legacy Android properties if hwdb didn't provide a matrix */
 		if (hwdb_key && !has_hwdb_matrix) {
 			char cm[PROPERTY_VALUE_MAX];
