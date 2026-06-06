@@ -430,8 +430,15 @@ static int finalize_sample_default (int s, sensors_event_t* data)
 			 * be translated to SI units. Where the translation is not possible
 			 * lower values indicate something is close and higher ones indicate distance.
 			 */
-			if (data->data[0] > PROXIMITY_THRESHOLD)
-				data->data[0] = PROXIMITY_THRESHOLD;
+			if (sensor[s].has_near_level) {
+				if (data->data[0] >= sensor[s].near_level)
+					data->data[0] = 0.0f; /* Near */
+				else
+					data->data[0] = PROXIMITY_THRESHOLD; /* Far */
+			} else {
+				if (data->data[0] > PROXIMITY_THRESHOLD)
+					data->data[0] = PROXIMITY_THRESHOLD;
+			}
 
 			/* ... fall through ... */
 		case SENSOR_TYPE_LIGHT:

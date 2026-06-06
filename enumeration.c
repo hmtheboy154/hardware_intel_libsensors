@@ -743,7 +743,10 @@ static int add_sensor (int dev_num, int catalog_index, int mode)
 
 	/* Initialize prop_matrix using hwdb_sensor if available, or fallback to Android properties */
 	sensor[s].has_prop_matrix = 0;
-	if (sensor_type == SENSOR_TYPE_ACCELEROMETER || sensor_type == SENSOR_TYPE_MAGNETIC_FIELD || sensor_type == SENSOR_TYPE_GYROSCOPE) {
+	sensor[s].has_near_level = 0;
+	sensor[s].location[0] = '\0';
+	
+	if (sensor_type == SENSOR_TYPE_ACCELEROMETER || sensor_type == SENSOR_TYPE_MAGNETIC_FIELD || sensor_type == SENSOR_TYPE_GYROSCOPE || sensor_type == SENSOR_TYPE_PROXIMITY) {
 		const char* prop_name = NULL;
 		const char* hwdb_key = NULL;
 
@@ -781,15 +784,38 @@ static int add_sensor (int dev_num, int catalog_index, int mode)
 				if (g_hwdb_sensor_ctx) {
 					char* full_modalias = hwdb_sensor_build_modalias(raw_modalias);
 					if (full_modalias) {
-						const char* matrix_val = hwdb_sensor_get_property(g_hwdb_sensor_ctx, full_modalias, hwdb_key);
-						if (matrix_val) {
-							if (sscanf(matrix_val, "%f,%f,%f,%f,%f,%f,%f,%f,%f", 
-								&sensor[s].prop_matrix[0], &sensor[s].prop_matrix[1], &sensor[s].prop_matrix[2],
-								&sensor[s].prop_matrix[3], &sensor[s].prop_matrix[4], &sensor[s].prop_matrix[5],
-								&sensor[s].prop_matrix[6], &sensor[s].prop_matrix[7], &sensor[s].prop_matrix[8]) == 9) {
-								sensor[s].has_prop_matrix = 1;
-								has_hwdb_matrix = 1;
-								ALOGI("S%d: Loaded %s from hwdb for modalias %s", s, hwdb_key, full_modalias);
+						if (hwdb_key) {
+							const char* matrix_val = hwdb_sensor_get_property(g_hwdb_sensor_ctx, full_modalias, hwdb_key);
+							if (matrix_val) {
+								if (sscanf(matrix_val, "%f,%f,%f,%f,%f,%f,%f,%f,%f", 
+									&sensor[s].prop_matrix[0], &sensor[s].prop_matrix[1], &sensor[s].prop_matrix[2],
+									&sensor[s].prop_matrix[3], &sensor[s].prop_matrix[4], &sensor[s].prop_matrix[5],
+									&sensor[s].prop_matrix[6], &sensor[s].prop_matrix[7], &sensor[s].prop_matrix[8]) == 9) {
+									sensor[s].has_prop_matrix = 1;
+									has_hwdb_matrix = 1;
+									ALOGI("S%d: Loaded %s from hwdb for modalias %s", s, hwdb_key, full_modalias);
+								}
+							}
+						}
+						
+						if (sensor_type == SENSOR_TYPE_ACCELEROMETER) {
+							const char* loc_val = hwdb_sensor_get_property(g_hwdb_sensor_ctx, full_modalias, "ACCEL_LOCATION");
+							if (loc_val) {
+								strncpy(sensor[s].location, loc_val, sizeof(sensor[s].location) - 1);
+								sensor[s].location[sizeof(sensor[s].location) - 1] = '\0';
+								ALOGI("S%d: Loaded ACCEL_LOCATION '%s' from hwdb", s, sensor[s].location);
+
+								/* If the accelerometer is on the base, mark it as secondary so Android favors the display one for rotation */
+								if (!strcmp(sensor[s].location, "base")) {
+									sensor[s].quirks |= QUIRK_SECONDARY;
+								}
+							}
+						} else if (sensor_type == SENSOR_TYPE_PROXIMITY) {
+							const char* prox_val = hwdb_sensor_get_property(g_hwdb_sensor_ctx, full_modalias, "PROXIMITY_NEAR_LEVEL");
+							if (prox_val) {
+								sensor[s].near_level = atoi(prox_val);
+								sensor[s].has_near_level = 1;
+								ALOGI("S%d: Loaded PROXIMITY_NEAR_LEVEL '%d' from hwdb", s, sensor[s].near_level);
 							}
 						}
 						free(full_modalias);
@@ -800,7 +826,7 @@ static int add_sensor (int dev_num, int catalog_index, int mode)
 		}
 
 		/* Fallback to legacy Android properties if hwdb didn't provide a matrix */
-		if (!has_hwdb_matrix) {
+		if (hwdb_key && !has_hwdb_matrix) {
 			char cm[PROPERTY_VALUE_MAX];
 			if (property_get(prop_name, cm, NULL) > 0) {
 				if (sscanf(cm, "%f,%f,%f,%f,%f,%f,%f,%f,%f", 

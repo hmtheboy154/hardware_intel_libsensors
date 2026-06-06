@@ -315,6 +315,11 @@ typedef struct
 
 	float prop_matrix[9];		/* Transformation matrix retrieved from hwdb or Android properties */
 	int has_prop_matrix;		/* Indicates if prop_matrix has been initialized */
+
+	int near_level;				/* Threshold for proximity sensor */
+	int has_near_level;			/* Indicates if near_level has been initialized from hwdb */
+	
+	char location[32];			/* Location string from hwdb, e.g. "base" or "display" */
 }
 sensor_info_t;
 

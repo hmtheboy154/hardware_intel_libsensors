@@ -188,8 +188,15 @@ char* sensor_get_name (int s)
 	}
 
 	if (sensor[s].friendly_name[0] != '\0' ||
-		!sensor_get_st_prop(s, "name", sensor[s].friendly_name))
-			return sensor[s].friendly_name;
+		!sensor_get_st_prop(s, "name", sensor[s].friendly_name)) {
+		/* Append location if available and not already in the string */
+		if (sensor[s].location[0] != '\0' && !strstr(sensor[s].friendly_name, sensor[s].location)) {
+			char loc_suffix[64];
+			snprintf(loc_suffix, sizeof(loc_suffix), " (%s)", sensor[s].location);
+			strncat(sensor[s].friendly_name, loc_suffix, MAX_NAME_SIZE - strlen(sensor[s].friendly_name) - 1);
+		}
+		return sensor[s].friendly_name;
+	}
 
 	/* If we got a iio device name from sysfs, use it */
 	if (sensor[s].internal_name[0]) {
@@ -197,6 +204,13 @@ char* sensor_get_name (int s)
 			 s, sensor[s].internal_name);
 	} else {
 		sprintf(sensor[s].friendly_name, "S%d", s);
+	}
+
+	/* Append location if available */
+	if (sensor[s].location[0] != '\0') {
+		char loc_suffix[64];
+		snprintf(loc_suffix, sizeof(loc_suffix), " (%s)", sensor[s].location);
+		strncat(sensor[s].friendly_name, loc_suffix, MAX_NAME_SIZE - strlen(sensor[s].friendly_name) - 1);
 	}
 
 	return sensor[s].friendly_name;
