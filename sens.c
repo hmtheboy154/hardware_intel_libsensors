@@ -29,7 +29,7 @@
 
 int usage(void)
 {
-	fprintf(stderr, "sens start [sensors.gmin.so]\n");
+	fprintf(stderr, "sens start [sensors.iio.so]\n");
 	fprintf(stderr, "sens [activate | deactivate] sensor_id\n");
 	fprintf(stderr, "sens set_delay sensor_id delay\n");
 	fprintf(stderr, "sens poll\n");
@@ -545,9 +545,11 @@ static int start_server(void)
 }
 
 static const char *hal_paths[] = {
-	"/system/lib/hw/sensors.gmin.so",
-	"sensors.gmin.so",
-	"/lib/sensors.gmin.so",
+#ifdef __LP64__
+	"/vendor/lib64/hw/sensors.iio.so",
+#else
+	"/vendor/lib/hw/sensors.iio.so",
+#endif
 };
 
 static int start_hal(int argc, char **argv)

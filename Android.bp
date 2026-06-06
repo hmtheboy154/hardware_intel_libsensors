@@ -1,0 +1,133 @@
+/*
+ * Copyright (C) 2024 The LineageOS Project
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+soong_namespace {
+}
+
+filegroup {
+    name: "sensors_iio_srcs",
+    srcs: [
+        "entry.c",
+        "enumeration.c",
+        "control.c",
+        "description.c",
+        "utils.c",
+        "transform.c",
+        "compass-calibration.c",
+        "matrix-ops.c",
+        "gyro-calibration.c",
+        "filtering.c",
+        "discovery.c",
+        "accel-calibration.c",
+    ],
+}
+
+filegroup {
+    name: "activity_iio_srcs",
+    srcs: [
+        "activity_event_entry.c",
+        "discovery.c",
+        "utils.c",
+    ]
+}
+
+cc_library_shared {
+    name: "sensors.iio",
+    relative_install_path: "hw",
+    proprietary: true,
+    cflags: [
+        "-DLOG_TAG=\"Sensors\"",
+        "-fvisibility=hidden",
+        "-Wno-missing-field-initializers",
+    ],
+    ldflags: [
+        "-Wl,--gc-sections",
+    ],
+    vendor: true,
+    shared_libs: [
+        "liblog",
+        "libcutils",
+        "libdl",
+    ],
+    static_libs: [
+        "libhwdb_sensor",
+        "libsmbios_parser",
+    ]
+    header_libs: [
+        "libhardware_headers",
+        "libutils_headers",
+    ],
+    srcs: [":sensors_iio_srcs"],
+}
+
+cc_binary {
+    name: "sens",
+    cflags: [
+        "-DLOG_TAG=\"Sensors\"",
+        "-fvisibility=hidden",
+    ],
+    vendor: true,
+    shared_libs: [
+        "liblog",
+        "libcutils",
+        "libdl",
+    ],
+    header_libs: [
+        "libhardware_headers",
+        "libutils_headers",
+    ],
+    srcs: ["sens.c"],
+}
+
+cc_library_shared {
+    name: "activity.iio",
+    relative_install_path: "hw",
+    proprietary: true,
+    cflags: [
+        "-DLOG_TAG=\"Activity\"",
+        "-fvisibility=hidden",
+        "-Wno-missing-field-initializers",
+    ],
+    ldflags: [
+        "-Wl,--gc-sections",
+    ],
+    vendor: true,
+    shared_libs: [
+        "liblog",
+        "libcutils",
+        "libdl",
+    ],
+    header_libs: [
+        "libhardware_headers",
+        "libutils_headers",
+    ],
+    srcs: [":activity_iio_srcs"],
+}
+
+cc_binary {
+    name: "activity",
+    cflags: [
+        "-DLOG_TAG=\"Activity\"",
+        "-fvisibility=hidden",
+    ],
+    vendor: true,
+    shared_libs: [
+        "liblog",
+        "libcutils",
+        "libdl",
+    ],
+    srcs: ["activity.c"],
+}

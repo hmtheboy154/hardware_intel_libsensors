@@ -57,13 +57,15 @@ This is primarily done by reading and writing sysfs files located under
 
 SUPPORTED SENSOR TYPES
 
-As of march 2015 the following sensor types are supported:
+As of October 2021 the following sensor types are supported:
 
 - accelerometer
 - gyroscope
 - magnetometer
 - ambient light sensor
 - temperature sensor
+- pressure sensor
+- humidity sensor
 - proximity sensor
 - step detector
 - step counter
@@ -165,11 +167,11 @@ OPTIONAL PROPERTIES
 
 We support a variety of properties. Some convey user visible information which
 is passed Android. Properties are expressed by sensor type, such as:
-ro.iio.accel.name = "Intel Accelerometer"
+ro.vendor.iio.accel.name = "Intel Accelerometer"
 
 On certain boards we may have several sensors of the same type. It's then
 possible to specialize the name using the iio sysfs 'name' contents:
-ro.iio.temp.bmg160.name = "BMG160 Thermometer".
+ro.vendor.iio.temp.bmg160.name = "BMG160 Thermometer".
 
 If several properties match, the most specific form has higher priority.
 
@@ -235,11 +237,11 @@ samples before they are passed to Android. That can add latency in the sensor
 output. It's also possible to individually set a sensor filter selection and
 strength through properties.
 
-ro.iio.anglvel.filter = average
+ro.vendor.iio.anglvel.filter = average
 
 or
 
-ro.iio.anglvel.filter = average, 10
+ro.vendor.iio.anglvel.filter = average, 10
 
 
 CALIBRATION

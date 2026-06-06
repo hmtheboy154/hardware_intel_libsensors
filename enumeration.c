@@ -138,6 +138,26 @@ sensor_catalog_entry_t sensor_catalog[] = {
 		},
 	},
 	{
+		.tag		= "pressure",
+		.shorthand	= "",
+		.type		= SENSOR_TYPE_PRESSURE,
+		.num_channels	= 1,
+		.is_virtual	= 0,
+		.channel = {
+			{ DECLARE_GENERIC_CHANNEL("pressure") },
+		},
+	},
+	{
+		.tag		= "humidity",
+		.shorthand	= "",
+		.type		= SENSOR_TYPE_RELATIVE_HUMIDITY,
+		.num_channels	= 1,
+		.is_virtual	= 0,
+		.channel = {
+			{ DECLARE_GENERIC_CHANNEL("humidityrelative") },
+		},
+	},
+	{
 		.tag		= "proximity",
 		.shorthand	= "prox",
 		.type		= SENSOR_TYPE_PROXIMITY,
@@ -599,7 +619,7 @@ static int add_sensor (int dev_num, int catalog_index, int mode)
 
 	/* Read name attribute, if available */
 	sprintf(sysfs_path, NAME_PATH, dev_num);
-	sysfs_read_str(sysfs_path, sensor[s].internal_name, MAX_NAME_SIZE);
+	sysfs_read_str(sysfs_path, sensor[s].internal_name, INTERNAL_NAME_SIZE);
 
 	/* See if we have general offsets and scale values for this sensor */
 

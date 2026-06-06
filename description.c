@@ -41,17 +41,17 @@
  * There are fallback paths in case the properties are not defined, but it is
  * highly desirable to at least have the following for each sensor:
  *
- * ro.iio.anglvel.name = Gyroscope
- * ro.iio.anglvel.vendor = Intel
- * ro.iio.anglvel.max_range = 35
- * ro.iio.anglvel.resolution = 0.002
- * ro.iio.anglvel.power = 6.1
+ * ro.vendor.iio.anglvel.name = Gyroscope
+ * ro.vendor.iio.anglvel.vendor = Intel
+ * ro.vendor.iio.anglvel.max_range = 35
+ * ro.vendor.iio.anglvel.resolution = 0.002
+ * ro.vendor.iio.anglvel.power = 6.1
  *
  * Besides these, we have a couple of knobs initially used to cope with Intel
  * Sensor Hub oddities, such as HID inspired units or firmware bugs:
  *
- * ro.iio.anglvel.transform = ISH
- * ro.iio.anglvel.quirks = init-rate
+ * ro.vendor.iio.anglvel.transform = ISH
+ * ro.vendor.iio.anglvel.quirks = init-rate
  *
  * The "terse" quirk indicates that the underlying driver only sends events
  * when the sensor reports a change. The HAL then periodically generates
@@ -63,12 +63,12 @@
  *
  * This one is used specifically to pass a calibration scale to ALS drivers:
  *
- * ro.iio.illuminance.name = CPLM3218x Ambient Light Sensor
- * ro.iio.illuminance.vendor = Capella Microsystems
- * ro.iio.illuminance.max_range = 167000
- * ro.iio.illuminance.resolution = 1
- * ro.iio.illuminance.power = .001
- * ro.iio.illuminance.illumincalib = 7400
+ * ro.vendor.iio.illuminance.name = CPLM3218x Ambient Light Sensor
+ * ro.vendor.iio.illuminance.vendor = Capella Microsystems
+ * ro.vendor.iio.illuminance.max_range = 167000
+ * ro.vendor.iio.illuminance.resolution = 1
+ * ro.vendor.iio.illuminance.power = .001
+ * ro.vendor.iio.illuminance.illumincalib = 7400
  *
  * There's a 'opt_scale' specifier, documented as follows:
  *
@@ -79,11 +79,11 @@
  *  such as an incorrect axis polarity for a given sensor.
  *
  *  The syntax is <usual property prefix>.<channel>.opt_scale, e.g.
- *  ro.iio.accel.y.opt_scale = -1 to negate the sign of the y readings
+ *  ro.vendor.iio.accel.y.opt_scale = -1 to negate the sign of the y readings
  *  for the accelerometer.
  *
  *  For sensors using a single channel - and only those - the channel
- *  name is implicitly void and a syntax such as ro.iio.illuminance.
+ *  name is implicitly void and a syntax such as ro.vendor.iio.illuminance.
  *  opt_scale = 3 has to be used.
  *
  * 'panel' and 'rotation' specifiers can be used to express ACPI PLD placement
@@ -92,14 +92,14 @@
  *
  * It's possible to use the contents of the iio device name as a way to
  * discriminate between sensors. Several sensors of the same type can coexist:
- * e.g. ro.iio.temp.bmg160.name = BMG160 Thermometer will be used in priority
- * over ro.iio.temp.name = BMC150 Thermometer if the sensor for which we query
+ * e.g. ro.vendor.iio.temp.bmg160.name = BMG160 Thermometer will be used in priority
+ * over ro.vendor.iio.temp.name = BMC150 Thermometer if the sensor for which we query
  * properties values happen to have its iio device name set to bmg160.
  */
 
 int sensor_get_st_prop (int s, const char* sel, char val[MAX_NAME_SIZE])
 {
-	char prop_name[PROP_NAME_MAX];
+	char prop_name[SENSORS_IIO_PROP_NAME_MAX];
 	char prop_val[PROP_VALUE_MAX];
 	char extended_sel[PROP_VALUE_MAX];
 
@@ -107,12 +107,12 @@ int sensor_get_st_prop (int s, const char* sel, char val[MAX_NAME_SIZE])
 	const char *prefix	= sensor_catalog[i].tag;
 	const char *shorthand = sensor_catalog[i].shorthand;
 
-	/* First try most specialized form, like ro.iio.anglvel.bmg160.name */
+	/* First try most specialized form, like ro.vendor.iio.anglvel.bmg160.name */
 
-	snprintf(extended_sel, PROP_NAME_MAX, "%s.%s",
+	snprintf(extended_sel, SENSORS_IIO_PROP_NAME_MAX, "%s.%s",
 		 sensor[s].internal_name, sel);
 
-	snprintf(prop_name, PROP_NAME_MAX, PROP_BASE, prefix, extended_sel);
+	snprintf(prop_name, SENSORS_IIO_PROP_NAME_MAX, PROP_BASE, prefix, extended_sel);
 
 	if (property_get(prop_name, prop_val, "")) {
 		strncpy(val, prop_val, MAX_NAME_SIZE-1);
@@ -122,7 +122,7 @@ int sensor_get_st_prop (int s, const char* sel, char val[MAX_NAME_SIZE])
 
 	if (shorthand[0] != '\0') {
 		/* Try with shorthand instead of prefix */
-		snprintf(prop_name, PROP_NAME_MAX, PROP_BASE, shorthand, extended_sel);
+		snprintf(prop_name, SENSORS_IIO_PROP_NAME_MAX, PROP_BASE, shorthand, extended_sel);
 
 		if (property_get(prop_name, prop_val, "")) {
 			strncpy(val, prop_val, MAX_NAME_SIZE-1);
@@ -130,9 +130,9 @@ int sensor_get_st_prop (int s, const char* sel, char val[MAX_NAME_SIZE])
 			return 0;
 		}
 	}
-	/* Fall back to simple form, like ro.iio.anglvel.name */
+	/* Fall back to simple form, like ro.vendor.iio.anglvel.name */
 
-	snprintf(prop_name, PROP_NAME_MAX, PROP_BASE, prefix, sel);
+	snprintf(prop_name, SENSORS_IIO_PROP_NAME_MAX, PROP_BASE, prefix, sel);
 
 	if (property_get(prop_name, prop_val, "")) {
 		strncpy(val, prop_val, MAX_NAME_SIZE-1);
@@ -535,17 +535,28 @@ int sensor_get_mounting_matrix (int s, float mm[9])
 
 	switch (sensor[s].type) {
 		case SENSOR_TYPE_ACCELEROMETER:
+			sprintf(mm_path, DEV_MOUNT_MATRIX_PATH, dev_num, "accel");
+			break;
 		case SENSOR_TYPE_MAGNETIC_FIELD:
+			sprintf(mm_path, DEV_MOUNT_MATRIX_PATH, dev_num, "magn");
+			break;
 		case SENSOR_TYPE_GYROSCOPE:
+			sprintf(mm_path, DEV_MOUNT_MATRIX_PATH, dev_num, "anglvel");
+			break;
 		case SENSOR_TYPE_PROXIMITY:
+			sprintf(mm_path, DEV_MOUNT_MATRIX_PATH, dev_num, "proximity");
 			break;
 		default:
 			return 0;
 	}
 
-	sprintf(mm_path, MOUNTING_MATRIX_PATH, dev_num);
-
 	err = sysfs_read_str(mm_path, mm_buf, sizeof(mm_buf));
+	if (err < 0) {
+		sprintf(mm_path, MOUNTING_MATRIX_PATH, dev_num);
+
+		err = sysfs_read_str(mm_path, mm_buf, sizeof(mm_buf));
+	}
+
 	if (err < 0)
 		return 0;
 

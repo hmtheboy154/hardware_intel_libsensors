@@ -18,6 +18,8 @@
 #define __COMMON_H__
 
 #include <string.h>
+#include <time.h>
+#include <unistd.h>
 
 #define MAX_DEVICES	9	/* Check iio devices 0 to MAX_DEVICES-1 */
 #define MAX_SENSORS	12	/* We can handle as many sensors */
@@ -45,16 +47,19 @@
 #define DEVICE_AVAIL_FREQ_PATH	BASE_PATH "sampling_frequency_available"
 #define ILLUMINATION_CALIBPATH	BASE_PATH "in_illuminance_calibscale"
 #define SENSOR_CALIB_BIAS_PATH	BASE_PATH "in_%s_calibbias"
-#define MOUNTING_MATRIX_PATH	BASE_PATH "mounting_matrix"
+#define MOUNTING_MATRIX_PATH	BASE_PATH "mount_matrix"
+#define DEV_MOUNT_MATRIX_PATH	BASE_PATH "in_%s_mount_matrix"
 
 #define CONFIGFS_TRIGGER_PATH	"/sys/kernel/config/iio/triggers/"
 
-#define PROP_BASE		"ro.iio.%s.%s" /* Note: PROPERTY_KEY_MAX is small */
+#define PROP_BASE		"ro.vendor.iio.%s.%s"
+#define SENSORS_IIO_PROP_NAME_MAX 64
 
 #define MAX_TYPE_SPEC_LEN	32	/* Channel type spec len; ex: "le:u10/16>>0" */
 #define MAX_SENSOR_REPORT_SIZE	32	/* Sensor report buffer size */
 #define MAX_DEVICE_REPORT_SIZE	32	/* iio device scan buffer size */
 
+#define INTERNAL_NAME_SIZE	8
 #define MAX_NAME_SIZE		64
 
 #define MAX_SENSOR_BASES	3	/* Max number of base sensors a sensor can rely on */

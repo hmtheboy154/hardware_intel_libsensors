@@ -441,9 +441,20 @@ static int finalize_sample_default (int s, sensors_event_t* data)
 			}
 
 			/* ... fall through ... */
-		case SENSOR_TYPE_LIGHT:
 		case SENSOR_TYPE_AMBIENT_TEMPERATURE:
 		case SENSOR_TYPE_TEMPERATURE:
+		case SENSOR_TYPE_RELATIVE_HUMIDITY:
+			/* Only keep two decimals for these readings */
+			data->data[0] = 0.01 * ((int) (data->data[0] * 100 / 1000));
+
+			/* These are on change sensors ; drop the sample if it has the same value as the previously reported one. */
+			if (data->data[0] == sensor[s].prev_val.data)
+				return 0;
+
+			sensor[s].prev_val.data = data->data[0];
+			break;
+		case SENSOR_TYPE_PRESSURE:
+		case SENSOR_TYPE_LIGHT:
 		case SENSOR_TYPE_INTERNAL_ILLUMINANCE:
 		case SENSOR_TYPE_INTERNAL_INTENSITY:
 			/* Only keep two decimals for these readings */
@@ -587,7 +598,7 @@ static float transform_sample_ISH (int s, int c, unsigned char* sample_data)
 
 void select_transform (int s)
 {
-	char prop_name[PROP_NAME_MAX];
+	char prop_name[SENSORS_IIO_PROP_NAME_MAX];
 	char prop_val[PROP_VALUE_MAX];
 	int i			= sensor[s].catalog_index;
 	const char *prefix	= sensor_catalog[i].tag;
