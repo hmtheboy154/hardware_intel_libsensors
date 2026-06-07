@@ -18,6 +18,7 @@
 #include <dirent.h>
 #include <stdlib.h>
 #include <fcntl.h>
+#include <limits.h>
 #include <cutils/properties.h>
 #include <utils/Log.h>
 #include <sys/stat.h>
@@ -31,6 +32,7 @@
 #include "calibration.h"
 
 #include <errno.h>
+#include <string.h>
 
 /*
  * This table maps syfs entries in scan_elements directories to sensor types,
@@ -783,13 +785,21 @@ static int add_sensor (int dev_num, int catalog_index, int mode)
 
 		char raw_modalias[512] = {0};
 		char sysfs_path[PATH_MAX];
+		char real_path[PATH_MAX];
 		int has_hwdb_matrix = 0;
 
-		/* Try reading the modalias for this IIO device */
-		sprintf(sysfs_path, BASE_PATH "device/modalias", dev_num);
-		FILE* f = fopen(sysfs_path, "r");
-		if (!f) {
-			sprintf(sysfs_path, BASE_PATH "../modalias", dev_num);
+		/*
+		 * Read the modalias of the parent bus device for this IIO sensor.
+		 * The IIO device path under /sys/bus/iio/devices/ is a symlink;
+		 * we resolve it to the real sysfs path, then read ../modalias
+		 * to get the parent device's modalias (e.g. acpi:BOSC0200:00).
+		 * This matches how systemd's 60-sensor.rules resolves modalias
+		 * via SUBSYSTEMS=="usb|i2c|platform", $attr{modalias}.
+		 */
+		sprintf(sysfs_path, BASE_PATH, dev_num);
+		FILE* f = NULL;
+		if (realpath(sysfs_path, real_path)) {
+			snprintf(sysfs_path, sizeof(sysfs_path), "%s/../modalias", real_path);
 			f = fopen(sysfs_path, "r");
 		}
 		
