@@ -65,7 +65,7 @@ cc_library_shared {
     static_libs: [
         "libhwdb_sensor",
         "libsmbios_parser",
-    ]
+    ],
     header_libs: [
         "libhardware_headers",
         "libutils_headers",
