@@ -863,12 +863,19 @@ static int add_sensor (int dev_num, int catalog_index, int mode)
 			fclose(f);
 		}
 
-		/* Fallback to reading the IIO 'label' sysfs node if hwdb didn't provide ACCEL_LOCATION */
+		/* Fallback to reading the IIO 'label' sysfs node if hwdb didn't provide ACCEL_LOCATION.
+		 * The label attribute is exposed directly on the IIO device itself. */
 		if (sensor_type == SENSOR_TYPE_ACCELEROMETER && sensor[s].location[0] == '\0') {
-			sprintf(sysfs_path, BASE_PATH "device/label", dev_num);
+			sprintf(sysfs_path, BASE_PATH "label", dev_num);
 			f = fopen(sysfs_path, "r");
 			if (!f) {
-				sprintf(sysfs_path, BASE_PATH "../label", dev_num);
+				/* Some older kernels or drivers may place it on the parent */
+				sprintf(sysfs_path, BASE_PATH, dev_num);
+				if (realpath(sysfs_path, real_path)) {
+					snprintf(sysfs_path, sizeof(sysfs_path), "%s/../label", real_path);
+				} else {
+					sprintf(sysfs_path, BASE_PATH "../label", dev_num);
+				}
 				f = fopen(sysfs_path, "r");
 			}
 			if (f) {
