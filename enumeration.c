@@ -817,7 +817,15 @@ static int add_sensor (int dev_num, int catalog_index, int mode)
 						if (hwdb_key) {
 							const char* matrix_val = hwdb_sensor_get_property(g_hwdb_sensor_ctx, full_modalias, hwdb_key);
 							if (matrix_val) {
-								if (sscanf(matrix_val, "%f,%f,%f,%f,%f,%f,%f,%f,%f", 
+								/* The hwdb format uses semicolons between rows:
+								 * "0, 1, 0; 1, 0, 0; 0, 0, 1"
+								 * Normalize by replacing ';' with ',' for sscanf. */
+								char matrix_buf[256];
+								strncpy(matrix_buf, matrix_val, sizeof(matrix_buf) - 1);
+								matrix_buf[sizeof(matrix_buf) - 1] = '\0';
+								for (char *p = matrix_buf; *p; p++)
+									if (*p == ';') *p = ',';
+								if (sscanf(matrix_buf, "%f,%f,%f,%f,%f,%f,%f,%f,%f", 
 									&sensor[s].prop_matrix[0], &sensor[s].prop_matrix[1], &sensor[s].prop_matrix[2],
 									&sensor[s].prop_matrix[3], &sensor[s].prop_matrix[4], &sensor[s].prop_matrix[5],
 									&sensor[s].prop_matrix[6], &sensor[s].prop_matrix[7], &sensor[s].prop_matrix[8]) == 9) {
