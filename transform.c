@@ -363,7 +363,7 @@ static void prop_transform_sample(int s, sensors_event_t *data){
 skip_matrix:
 	/* Light sensor scale prop, if the driver provided scale (or lack thereof) do not match with the one size fit all config_autoBrightnessLevels */
 	if(sensor_desc[s].type == SENSOR_TYPE_LIGHT){
-		property_get("persist.hal.sensors.iio.light.scale", cm, "1.0");
+		property_get("persist.vendor.hal.sensors.iio.light.scale", cm, "1.0");
 		float prop_scale = atof(cm);
 		data->light = data->light * prop_scale;
 	}

@@ -773,13 +773,13 @@ static int add_sensor (int dev_num, int catalog_index, int mode)
 		const char* hwdb_key = NULL;
 
 		if (sensor_type == SENSOR_TYPE_ACCELEROMETER) {
-			prop_name = "persist.hal.sensors.iio.accel.matrix";
+			prop_name = "persist.vendor.hal.sensors.iio.accel.matrix";
 			hwdb_key = "ACCEL_MOUNT_MATRIX";
 		} else if (sensor_type == SENSOR_TYPE_MAGNETIC_FIELD) {
-			prop_name = "persist.hal.sensors.iio.magn.matrix";
+			prop_name = "persist.vendor.hal.sensors.iio.magn.matrix";
 			hwdb_key = "MAGN_MOUNT_MATRIX";
 		} else if (sensor_type == SENSOR_TYPE_GYROSCOPE) {
-			prop_name = "persist.hal.sensors.iio.anglvel.matrix";
+			prop_name = "persist.vendor.hal.sensors.iio.anglvel.matrix";
 			hwdb_key = "GYRO_MOUNT_MATRIX";
 		}
 
